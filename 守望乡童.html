@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI赋能·守望乡童 - 留守儿童心理健康监测</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:微软雅黑;}
+        body{background:#f5f7fa;padding:20px;max-width:800px;margin:0 auto;}
+        .box{background:white;padding:25px;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+        h1{color:#2d6cb6;text-align:center;margin-bottom:20px;font-size:22px;}
+        h2{color:#444;font-size:18px;margin:15px 0 10px;}
+        .question{margin:12px 0;}
+        .btn{background:#2d6cb6;color:white;border:none;padding:12px 25px;border-radius:8px;cursor:pointer;margin:10px 5px;}
+        .btn:hover{background:#235a9e;}
+        .result{padding:15px;background:#e8f4ff;border-radius:8px;margin:15px 0;display:none;}
+        .data-list{max-height:200px;overflow-y:auto;border:1px solid #eee;padding:10px;border-radius:8px;}
+        .chat-box{border:1px solid #ddd;border-radius:8px;padding:10px;height:300px;overflow-y:auto;margin:10px 0;}
+        .chat-input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-top:10px;}
+        .msg{margin:8px 0;padding:8px 12px;border-radius:8px;max-width:80%;}
+        .student{background:#f0f0f0;align-self:flex-start;}
+        .ai{background:#d1e7ff;align-self:flex-end;margin-left:auto;}
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>AI赋能，守望乡童<br>留守儿童心理健康监测系统</h1>
+        
+        <div>
+            <h2>基本信息</h2>
+            <input type="text" id="name" placeholder="姓名" style="width:48%;padding:8px;margin:5px 1%;">
+            <input type="text" id="grade" placeholder="年级" style="width:48%;padding:8px;margin:5px 1%;">
+            <input type="text" id="school" placeholder="学校" style="width:98%;padding:8px;margin:5px 1%;">
+        </div>
+
+        <div id="testPart">
+            <h2>心理健康测试（1=完全不符合 4=完全符合）</h2>
+            <div class="question">1. 我经常心里难过、想哭 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">2. 我觉得很孤单，没人理解 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">3. 我晚上睡不好 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">4. 我担心爸妈不在身边出事 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">5. 我不想和同学说话玩耍 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">6. 我觉得自己没用 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">7. 我容易烦躁发脾气 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">8. 我害怕去学校 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">9. 我觉得没人关心我 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <div class="question">10. 我对喜欢的事没兴趣 <select class="score"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+            <button class="btn" onclick="calcResult()">提交测试，查看结果</button>
+        </div>
+
+        <div class="result" id="resultBox">
+            <h2>测试结果</h2>
+            <p id="resultText"></p>
+            <p id="warnText" style="color:red;font-weight:bold;"></p>
+        </div>
+
+        <div class="box">
+            <h2>AI陪伴聊天</h2>
+            <div class="chat-box" id="chatBox"></div>
+            <input type="text" class="chat-input" id="chatInput" placeholder="说点什么吧，AI陪着你..." onkeydown="if(event.keyCode==13)sendChat()">
+            <button class="btn" onclick="sendChat()">发送</button>
+        </div>
+
+        <div class="box">
+            <h2>已收集数据（可复制导出）</h2>
+            <div class="data-list" id="dataList"></div>
+            <button class="btn" onclick="exportData()">导出数据</button>
+        </div>
+    </div>
+
+<script>
+// 全局数据存储
+let allData = [];
+
+// 计算结果
+function calcResult(){
+    let name = document.getElementById('name').value;
+    let grade = document.getElementById('grade').value;
+    let school = document.getElementById('school').value;
+    if(!name||!grade||!school){alert('请填写完整信息');return;}
+    
+    let scores = document.querySelectorAll('.score');
+    let total = 0;
+    let ans = [];
+    scores.forEach(s=>{total+=parseInt(s.value);ans.push(s.value);});
+    
+    let level,advice;
+    if(total<=25){level="健康状态";advice="心理状态良好，保持积极生活～";}
+    else if(total<=35){level="轻微波动";advice="情绪有点压力，多和老师同学交流～";}
+    else if(total<=45){level="中度风险";advice="需要重点关注，建议找老师谈心～";}
+    else{level="高度风险";advice="请立即告诉老师或监护人，寻求专业帮助！";}
+    
+    let warn = ans[9]>=3 ? "⚠️ 高危预警：存在自伤倾向，请立即干预！" : "";
+    
+    document.getElementById('resultText').innerHTML =
+        `姓名：${name} | 年级：${grade} | 学校：${school}<br>
+         总分：${total} | 等级：${level}<br>建议：${advice}`;
+    document.getElementById('warnText').innerHTML = warn;
+    document.getElementById('resultBox').style.display = "block";
+    
+    // 保存数据
+    let record = {
+        time:new Date().toLocaleString(),name,grade,school,
+        answers:ans.join(','),total,level,warn
+    };
+    allData.push(record);
+    showData();
+}
+
+// 显示数据
+function showData(){
+    let html = '';
+    allData.forEach((d,i)=>{
+        html+=`${i+1}、${d.time} | ${d.name} | 总分${d.total} | ${d.level}<br>`;
+    });
+    document.getElementById('dataList').innerHTML = html;
+}
+
+// 导出数据
+function exportData(){
+    let csv = "时间,姓名,年级,学校,答案,总分,等级,预警\n";
+    allData.forEach(d=>{
+        csv+=`${d.time},${d.name},${d.grade},${d.school},${d.answers},${d.total},${d.level},${d.warn}\n`;
+    });
+    let blob = new Blob([csv],{type:"text/csv;charset=utf-8"});
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = "乡童心理健康数据.csv";
+    a.click();
+}
+
+// AI陪伴聊天
+function sendChat(){
+    let input = document.getElementById('chatInput');
+    let msg = input.value.trim();
+    if(!msg)return;
+    addMsg(msg,'student');
+    input.value = '';
+    
+    // AI回复逻辑
+    let reply = "我在这里陪着你，有什么心事都可以告诉我～";
+    if(msg.includes('难过')||msg.includes('哭'))reply="别难过，我一直陪着你，你很棒的！";
+    if(msg.includes('孤单')||msg.includes('想爸妈'))reply="我知道你很想家人，我会一直陪着你聊天～";
+    if(msg.includes('害怕')||msg.includes('不敢'))reply="不用害怕，你很勇敢，有我在！";
+    if(msg.includes('烦')||msg.includes('生气'))reply="深呼吸，慢慢说出来，我听着～";
+    
+    setTimeout(()=>addMsg(reply,'ai'),800);
+}
+
+function addMsg(text,type){
+    let box = document.getElementById('chatBox');
+    let div = document.createElement('div');
+    div.className = "msg "+type;
+    div.innerText = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+</script>
+</body>
+</html>
